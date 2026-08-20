@@ -2,6 +2,16 @@
 
 长会议音频转写工具：把一段会议录音，自动转成**文字转写 + 说话人识别 + 章节摘要 + 会议纪要**。
 
+基于阿里云百炼（DashScope）的非实时语音识别与千问大模型构建，使用开源的 CAM++ 声纹模型做说话人身份识别；配以热词增强、RAG 知识库、章节摘要与会议纪要，适合长会议、访谈等场景的自动整理归档。
+
+## 技术栈
+
+- **语音转写**：阿里云百炼 DashScope 非实时语音识别（`qwen-audio-3.0-asr-flash-filetrans`），支持说话人分离、热词增强
+- **摘要 / 纪要**：阿里云百炼 DashScope 千问大模型（`qwen-plus` / `qwen-max`）
+- **声纹识别**：开源 CAM++ 声纹模型（`iic/speech_campplus_sv_zh-cn_16k-common`，基于 FunASR）
+- **音频中转**：阿里云 OSS + ffmpeg
+- **配置管理**：Python 标准库本地 Web 工具（`webapp/`）
+
 ## 环境要求
 
 - Python ≥ 3.10
@@ -137,3 +147,16 @@ python src/enroll_speaker.py --list                                     # 查看
 python src/enroll_speaker.py --remove "张三"                            # 删除
 python src/enroll_speaker.py --threshold 0.78                           # 调匹配阈值
 ```
+
+## 致谢
+
+- [阿里云百炼（DashScope）](https://www.aliyun.com/product/bailian)：非实时语音识别与千问大模型服务
+- [FunASR](https://github.com/modelscope/FunASR)：开源语音识别工具包（含 CAM++ 声纹模型）
+- [ModelScope](https://modelscope.cn)：开源模型托管与下载
+- [PyTorch](https://pytorch.org)：声纹模型推理框架
+- [FFmpeg](https://ffmpeg.org)：音频分割与处理
+- [numpy](https://numpy.org)：数值计算
+
+## 许可证
+
+本项目采用 [MIT 许可证](LICENSE)，允许自由使用、修改、分发与商用（需保留版权声明）。
