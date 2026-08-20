@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>meeting-mind 配置管理</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #fff; --border: #e2e5ea;
+    --primary: #2563eb; --danger: #dc2626; --text: #1f2937; --muted: #6b7280;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Microsoft YaHei", system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  header { background: #fff; border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 18px; font-weight: 600; }
+  header .env { color: var(--muted); font-size: 12px; }
+  nav { display: flex; gap: 4px; }
+  nav button { border: none; background: none; padding: 8px 16px; font-size: 14px; cursor: pointer; border-radius: 6px 6px 0 0; color: var(--muted); }
+  nav button.active { background: var(--primary); color: #fff; }
+  main { max-width: 1080px; margin: 20px auto; padding: 0 20px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .toolbar input[type=text], .toolbar select {
+    padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: #fff;
+  }
+  .toolbar input[type=text] { flex: 1; min-width: 200px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .card h3 { font-size: 14px; margin-bottom: 10px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; background: #fafbfc; }
+  td input, td select { padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; width: 100%; }
+  .kw { display: inline-block; background: #eef2ff; color: #4338ca; border-radius: 4px; padding: 1px 6px; font-size: 12px; margin: 1px; }
+  .badge { display: inline-block; border-radius: 4px; padding: 1px 8px; font-size: 12px; }
+  .badge.high { background: #fee2e2; color: #b91c1c; }
+  .badge.normal { background: #e0e7ff; color: #3730a3; }
+  .badge.low { background: #f3f4f6; color: #6b7280; }
+  .badge.background { background: #dcfce7; color: #166534; }
+  .badge.term { background: #fef3c7; color: #92400e; }
+  .btn { border: 1px solid var(--border); background: #fff; padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+  .btn:hover { background: #f3f4f6; }
+  .btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn.danger { color: var(--danger); border-color: #fecaca; }
+  .btn.small { padding: 3px 8px; font-size: 12px; }
+  .msg { margin-top: 10px; padding: 8px 12px; border-radius: 6px; font-size: 13px; display: none; }
+  .msg.ok { background: #dcfce7; color: #166534; display: block; }
+  .msg.err { background: #fee2e2; color: #b91c1c; display: block; }
+  .empty { color: var(--muted); text-align: center; padding: 30px; }
+  .content-cell { font-size: 12px; color: var(--muted); cursor: pointer; }
+  .content-cell.expanded { color: var(--text); white-space: pre-wrap; }
+  .actions { white-space: nowrap; }
+  .fade { opacity: .4; }
+  dialog { border: 1px solid var(--border); border-radius: 8px; padding: 20px; width: 640px; max-width: 92vw; }
+  dialog::backdrop { background: rgba(0,0,0,.3); }
+  dialog form { display: flex; flex-direction: column; gap: 10px; }
+  dialog label { font-size: 13px; color: var(--muted); }
+  dialog input, dialog select, dialog textarea { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+  dialog textarea { min-height: 120px; resize: vertical; }
+  .dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+  .count { color: var(--muted); font-size: 12px; margin-left: auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>meeting-mind 配置管理</h1>
+  <span class="env">config/hotwords.json · config/knowledge_base.json</span>
+  <nav>
+    <button id="tab-hotwords" class="active" onclick="switchTab('hotwords')">热词</button>
+    <button id="tab-knowledge" onclick="switchTab('knowledge')">知识库</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ══════════ 热词 ══════════ -->
+  <section id="panel-hotwords">
+    <div class="card">
+      <h3>新增热词</h3>
+      <div class="row">
+        <input type="text" id="hw-text" placeholder="词条文本，如：低轨卫星">
+        <select id="hw-cat"><option value="">未分类</option><option>人名</option><option>产品</option><option>术语</option><option>其他</option></select>
+        <select id="hw-weight"><option value="5">权重 5</option><option value="4">权重 4</option><option value="3">权重 3</option></select>
+        <select id="hw-lang"><option value="zh">zh</option><option value="en">en</option></select>
+        <button class="btn primary" onclick="addHotword()">添加</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="hw-search" placeholder="搜索词条…" oninput="renderHotwords()">
+      <select id="hw-f-cat" onchange="renderHotwords()"><option value="">全部分类</option><option>人名</option><option>产品</option><option>术语</option><option>其他</option><option value="__none__">未分类</option></select>
+      <select id="hw-f-weight" onchange="renderHotwords()"><option value="">全部权重</option><option value="5">5</option><option value="4">4</option><option value="3">3</option></select>
+      <select id="hw-f-lang" onchange="renderHotwords()"><option value="">全部语言</option><option value="zh">zh</option><option value="en">en</option></select>
+      <button class="btn primary" onclick="saveHotwords()">保存热词</button>
+      <span class="count" id="hw-count"></span>
+    </div>
+
+    <div class="card">
+      <table id="hw-table"></table>
+      <div class="empty" id="hw-empty" style="display:none">没有匹配的热词</div>
+    </div>
+  </section>
+
+  <!-- ══════════ 知识库 ══════════ -->
+  <section id="panel-knowledge" style="display:none">
+    <div class="toolbar">
+      <input type="text" id="kb-search" placeholder="搜索标题 / 内容 / 关键词…" oninput="renderKnowledge()">
+      <select id="kb-f-type" onchange="renderKnowledge()"><option value="">全部类型</option><option value="background">background</option><option value="term">term</option></select>
+      <select id="kb-f-prio" onchange="renderKnowledge()"><option value="">全部优先级</option><option value="high">high</option><option value="normal">normal</option><option value="low">low</option></select>
+      <button class="btn primary" onclick="openKbDialog()">新增条目</button>
+      <button class="btn primary" onclick="saveKnowledge()">保存知识库</button>
+      <span class="count" id="kb-count"></span>
+    </div>
+
+    <div class="card">
+      <table id="kb-table"></table>
+      <div class="empty" id="kb-empty" style="display:none">没有匹配的条目</div>
+    </div>
+  </section>
+
+  <div class="msg" id="msg"></div>
+</main>
+
+<dialog id="kb-dialog">
+  <form method="dialog">
+    <h3 id="kb-dlg-title">新增知识条目</h3>
+    <label>类型
+      <select id="kb-type"><option value="term">term（术语）</option><option value="background">background（背景）</option></select>
+    </label>
+    <label>标题 <input type="text" id="kb-title"></label>
+    <label>内容 <textarea id="kb-content"></textarea></label>
+    <label>关键词（逗号分隔） <input type="text" id="kb-keywords" placeholder="词1, 词2, 词3"></label>
+    <label>优先级
+      <select id="kb-priority"><option value="normal">normal</option><option value="high">high</option><option value="low">low</option></select>
+    </label>
+    <div class="dlg-actions">
+      <button class="btn" value="cancel">取消</button>
+      <button class="btn primary" value="ok" onclick="submitKbDialog()">确定</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+let hotwords = [];
+let knowledge = [];
+let editingKbIdx = -1;
+
+// ── tab ──
+function switchTab(name) {
+  document.getElementById('tab-hotwords').classList.toggle('active', name === 'hotwords');
+  document.getElementById('tab-knowledge').classList.toggle('active', name === 'knowledge');
+  document.getElementById('panel-hotwords').style.display = name === 'hotwords' ? '' : 'none';
+  document.getElementById('panel-knowledge').style.display = name === 'knowledge' ? '' : 'none';
+}
+
+// ── 消息 ──
+let msgTimer = null;
+function showMsg(text, ok = true) {
+  const el = document.getElementById('msg');
+  el.className = ok ? 'msg ok' : 'msg err';
+  el.textContent = text;
+  clearTimeout(msgTimer);
+  msgTimer = setTimeout(() => el.style.display = 'none', 4000);
+}
+
+// ── 加载 ──
+async function loadAll() {
+  try {
+    const [hw, kb] = await Promise.all([
+      fetch('/api/hotwords').then(r => r.json()),
+      fetch('/api/knowledge').then(r => r.json()),
+    ]);
+    hotwords = hw; knowledge = kb;
+    renderHotwords(); renderKnowledge();
+  } catch (e) {
+    showMsg('加载失败：' + e, false);
+  }
+}
+
+// ════════════ 热词 ════════════
+const CATS = ['', '人名', '产品', '术语', '其他'];
+
+function addHotword() {
+  const text = document.getElementById('hw-text').value.trim();
+  if (!text) { showMsg('请输入词条文本', false); return; }
+  hotwords.push({
+    text,
+    category: document.getElementById('hw-cat').value || '',
+    weight: Number(document.getElementById('hw-weight').value),
+    lang: document.getElementById('hw-lang').value,
+  });
+  document.getElementById('hw-text').value = '';
+  renderHotwords();
+}
+
+function updateHotword(i, field, value) {
+  if (field === 'weight') value = Number(value);
+  hotwords[i][field] = value;
+}
+
+function removeHotword(i) { hotwords.splice(i, 1); renderHotwords(); }
+
+function filteredHotwords() {
+  const q = document.getElementById('hw-search').value.trim().toLowerCase();
+  const cat = document.getElementById('hw-f-cat').value;
+  const w = document.getElementById('hw-f-weight').value;
+  const lg = document.getElementById('hw-f-lang').value;
+  return hotwords.filter(h => {
+    if (q && !(h.text || '').toLowerCase().includes(q)) return false;
+    if (cat === '__none__') { if (h.category) return false; }
+    else if (cat && h.category !== cat) return false;
+    if (w && String(h.weight) !== w) return false;
+    if (lg && h.lang !== lg) return false;
+    return true;
+  });
+}
+
+function renderHotwords() {
+  const list = filteredHotwords();
+  const idxMap = list.map(h => hotwords.indexOf(h));
+  document.getElementById('hw-count').textContent = list.length + ' / ' + hotwords.length;
+  document.getElementById('hw-empty').style.display = list.length ? 'none' : '';
+  const table = document.getElementById('hw-table');
+  if (!list.length) { table.innerHTML = ''; return; }
+  let html = '<thead><tr><th style="width:24%">词条</th><th style="width:16%">分类</th><th style="width:10%">权重</th><th style="width:10%">语言</th><th>操作</th></tr></thead><tbody>';
+  list.forEach((h, k) => {
+    const i = idxMap[k];
+    html += `<tr>
+      <td><input value="${esc(h.text)}" onchange="updateHotword(${i},'text',this.value)"></td>
+      <td><select onchange="updateHotword(${i},'category',this.value)">
+        ${CATS.map(c => `<option value="${c}" ${h.category===c?'selected':''}>${c||'未分类'}</option>`).join('')}
+      </select></td>
+      <td><select onchange="updateHotword(${i},'weight',this.value)">
+        ${[5,4,3].map(w => `<option value="${w}" ${h.weight===w?'selected':''}>${w}</option>`).join('')}
+      </select></td>
+      <td><select onchange="updateHotword(${i},'lang',this.value)">
+        ${['zh','en'].map(l => `<option value="${l}" ${h.lang===l?'selected':''}>${l}</option>`).join('')}
+      </select></td>
+      <td class="actions"><button class="btn danger small" onclick="removeHotword(${i})">删除</button></td>
+    </tr>`;
+  });
+  table.innerHTML = html + '</tbody>';
+}
+
+async function saveHotwords() {
+  const res = await post('/api/hotwords', hotwords);
+  if (res.ok) showMsg(`已保存 ${res.count} 条热词 → ${res.path}`);
+  else showMsg('保存失败：' + res.error, false);
+}
+
+// ════════════ 知识库 ════════════
+function filteredKnowledge() {
+  const q = document.getElementById('kb-search').value.trim().toLowerCase();
+  const t = document.getElementById('kb-f-type').value;
+  const p = document.getElementById('kb-f-prio').value;
+  return knowledge.filter(e => {
+    if (t && e.type !== t) return false;
+    if (p && e.priority !== p) return false;
+    if (q) {
+      const hay = (e.title + ' ' + e.content + ' ' + (e.keywords||[]).join(' ')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function renderKnowledge() {
+  const list = filteredKnowledge();
+  const idxMap = list.map(e => knowledge.indexOf(e));
+  document.getElementById('kb-count').textContent = list.length + ' / ' + knowledge.length;
+  document.getElementById('kb-empty').style.display = list.length ? 'none' : '';
+  const table = document.getElementById('kb-table');
+  if (!list.length) { table.innerHTML = ''; return; }
+  let html = '<thead><tr><th style="width:10%">ID</th><th style="width:9%">类型</th><th style="width:14%">标题</th><th>内容</th><th>关键词</th><th style="width:9%">优先级</th><th>操作</th></tr></thead><tbody>';
+  list.forEach((e, k) => {
+    const i = idxMap[k];
+    const kws = (e.keywords||[]).map(x => `<span class="kw">${esc(x)}</span>`).join(' ');
+    html += `<tr>
+      <td>${esc(e.id)}</td>
+      <td><span class="badge ${e.type}">${e.type}</span></td>
+      <td>${esc(e.title)}</td>
+      <td><div class="content-cell" onclick="this.classList.toggle('expanded')">${esc(trunc(e.content, 80))}</div></td>
+      <td>${kws}</td>
+      <td><span class="badge ${e.priority}">${e.priority}</span></td>
+      <td class="actions">
+        <button class="btn small" onclick="openKbDialog(${i})">编辑</button>
+        <button class="btn danger small" onclick="removeKnowledge(${i})">删除</button>
+      </td>
+    </tr>`;
+  });
+  table.innerHTML = html + '</tbody>';
+}
+
+function nextKbId(type) {
+  const prefix = type === 'background' ? 'bg_' : 'term_';
+  let max = 0;
+  knowledge.forEach(e => {
+    if (e.id && e.id.startsWith(prefix)) {
+      const n = parseInt(e.id.slice(3), 10);
+      if (!isNaN(n) && n > max) max = n;
+    }
+  });
+  return prefix + String(max + 1).padStart(3, '0');
+}
+
+function openKbDialog(i = -1) {
+  editingKbIdx = i;
+  const dlg = document.getElementById('kb-dialog');
+  document.getElementById('kb-dlg-title').textContent = i >= 0 ? '编辑知识条目' : '新增知识条目';
+  if (i >= 0) {
+    const e = knowledge[i];
+    document.getElementById('kb-type').value = e.type;
+    document.getElementById('kb-title').value = e.title || '';
+    document.getElementById('kb-content').value = e.content || '';
+    document.getElementById('kb-keywords').value = (e.keywords || []).join(', ');
+    document.getElementById('kb-priority').value = e.priority || 'normal';
+  } else {
+    document.getElementById('kb-type').value = 'term';
+    document.getElementById('kb-title').value = '';
+    document.getElementById('kb-content').value = '';
+    document.getElementById('kb-keywords').value = '';
+    document.getElementById('kb-priority').value = 'normal';
+  }
+  dlg.showModal();
+}
+
+function submitKbDialog() {
+  const type = document.getElementById('kb-type').value;
+  const title = document.getElementById('kb-title').value.trim();
+  const content = document.getElementById('kb-content').value.trim();
+  if (!title || !content) { showMsg('标题和内容不能为空', false); return; }
+  const kw = document.getElementById('kb-keywords').value
+    .split(/[,，]/).map(s => s.trim()).filter(Boolean);
+  const priority = document.getElementById('kb-priority').value;
+  const rec = {
+    type, title, content, keywords: kw, priority,
+    id: editingKbIdx >= 0 ? knowledge[editingKbIdx].id : nextKbId(type),
+  };
+  if (editingKbIdx >= 0) knowledge[editingKbIdx] = rec;
+  else knowledge.push(rec);
+  document.getElementById('kb-dialog').close();
+  renderKnowledge();
+}
+
+function removeKnowledge(i) { knowledge.splice(i, 1); renderKnowledge(); }
+
+async function saveKnowledge() {
+  const res = await post('/api/knowledge', knowledge);
+  if (res.ok) showMsg(`已保存 ${res.count} 条知识 → ${res.path}`);
+  else showMsg('保存失败：' + res.error, false);
+}
+
+// ── 公共 ──
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function trunc(s, n) { s = s || ''; return s.length > n ? s.slice(0, n) + '…' : s; }
+async function post(url, data) {
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return await r.json();
+  } catch (e) { return { ok: false, error: String(e) }; }
+}
+
+// 取消对话框用默认 form 行为
+document.getElementById('kb-dialog').addEventListener('cancel', e => e.preventDefault());
+loadAll();
+</script>
+</body>
+</html>

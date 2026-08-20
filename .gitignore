@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+
+# 大数据与生成物（音频、分段、输出）
+meeting_audio/
+segments/
+output/
+speakers/**/*.wav
+
+# 含密钥/环境信息的本地配置（不入库；提交 example 模板）
+config/oss_config.json
+
+# 个人敏感数据（声纹注册库，不入库）
+speakers/voiceprint_profiles.json
+
+# 系统杂项
+.DS_Store
+Thumbs.db
+
+# webapp 保存自动备份
+config/*.bak

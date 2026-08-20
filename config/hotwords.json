@@ -1,0 +1,62 @@
+[
+  {
+    "text": "张三",
+    "weight": 5,
+    "lang": "zh",
+    "category": "人名"
+  },
+  {
+    "text": "李四",
+    "weight": 4,
+    "lang": "zh",
+    "category": "人名"
+  },
+  {
+    "text": "项目Alpha",
+    "weight": 4,
+    "lang": "zh",
+    "category": "产品"
+  },
+  {
+    "text": "项目Beta",
+    "weight": 4,
+    "lang": "zh",
+    "category": "产品"
+  },
+  {
+    "text": "低轨卫星",
+    "weight": 4,
+    "lang": "zh",
+    "category": "术语"
+  },
+  {
+    "text": "大模型",
+    "weight": 4,
+    "lang": "zh",
+    "category": "术语"
+  },
+  {
+    "text": "检索增强",
+    "weight": 3,
+    "lang": "zh",
+    "category": "术语"
+  },
+  {
+    "text": "OpenAI",
+    "weight": 3,
+    "lang": "en",
+    "category": "术语"
+  },
+  {
+    "text": "API",
+    "weight": 3,
+    "lang": "en",
+    "category": "术语"
+  },
+  {
+    "text": "示例词条",
+    "weight": 3,
+    "lang": "zh",
+    "category": "其他"
+  }
+]

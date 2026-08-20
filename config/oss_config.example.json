@@ -1,0 +1,5 @@
+{
+    "endpoint": "oss-cn-beijing.aliyuncs.com",
+    "bucket_name": "your-bucket-name",
+    "_note": "access_key_id 和 access_key_secret 从环境变量 OSS_ACCESS_KEY_ID / OSS_ACCESS_KEY_SECRET 读取。本文件为模板：复制为 oss_config.json 并填入你的 bucket 名称后使用。"
+}
